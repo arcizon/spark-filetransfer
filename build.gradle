@@ -1,0 +1,144 @@
+plugins {
+    id 'idea'
+    id 'scala'
+    id 'com.github.maiflai.scalatest' version '0.26'
+    id 'com.diffplug.gradle.spotless' version '3.29.0'
+    id 'maven-publish'
+    id 'signing'
+    id 'io.codearte.nexus-staging' version '0.21.2'
+}
+
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
+
+idea {
+    project {
+        languageLevel = '1.8'
+        vcs = 'Git'
+    }
+}
+
+repositories {
+    mavenCentral()
+    jcenter()
+}
+
+dependencies {
+    implementation 'org.scala-lang:scala-library:2.11.12'
+
+    testImplementation 'org.scalatest:scalatest_2.11:3.0.5'
+
+    testRuntime 'org.pegdown:pegdown:1.1.0'
+}
+
+task sourcesJar(type: Jar) {
+    classifier "sources"
+    from sourceSets.main.allScala
+}
+
+task scaladocJar(type: Jar, dependsOn: scaladoc) {
+    classifier "javadoc"
+    from scaladoc
+}
+
+spotless {
+    scala {
+        scalafmt()
+    }
+}
+
+scaladoc {
+    title = "Spark SCP v${project.version} API"
+    scalaDocOptions.setAdditionalParameters(["-doc-root-content", "rootdoc.txt"])
+}
+
+artifacts {
+    archives sourcesJar, scaladocJar
+}
+
+signing {
+    sign configurations.archives
+}
+
+publishing {
+    publications {
+        mavenScala(MavenPublication) {
+            from components.java
+            artifact sourcesJar
+            artifact scaladocJar
+
+            signArchives.signatures.each { signature ->
+                artifact(signature) {
+                    extension signature.type
+                }
+            }
+
+            artifact(file("$buildDir/publications/mavenScala/pom-default.xml.asc")) {
+                extension 'pom.asc'
+                builtBy signArchives
+            }
+
+            pom {
+                packaging = 'jar'
+                description = 'API for reading and writing data via various file transfer protocols from Apache Spark.'
+                name = 'Spark SCP'
+                url = 'https://github.com/arcizon/spark-scp'
+                organization {
+                    name = 'com.github.arcizon'
+                    url = 'https://github.com/arcizon'
+                }
+                issueManagement {
+                    system = 'GitHub'
+                    url = 'https://github.com/arcizon/spark-scp/issues'
+                }
+                scm {
+                    url = 'https://github.com/arcizon/spark-scp'
+                    connection = 'scm:git:git://github.com/arcizon/spark-scp.git'
+                    developerConnection = 'scm:git:ssh://github.com/arcizon/spark-scp.git'
+                }
+                developers {
+                    developer {
+                        id = 'shaikmanu797'
+                        name = 'Mansoor Baba Shaik'
+                        email = 'mansoorbabashaik@outlook.com'
+                        url = 'https://github.com/shaikmanu797'
+                    }
+                }
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url = 'http://opensource.org/licenses/MIT'
+                    }
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            def releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
+            def snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots/"
+            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+            credentials {
+                username = nexusUsername
+                password = nexusPassword
+            }
+        }
+    }
+}
+
+nexusStaging {
+}
+
+model {
+    tasks.publishMavenScalaPublicationToMavenLocal {
+        dependsOn project.tasks.signArchives
+    }
+    tasks.publishMavenScalaPublicationToMavenRepository {
+        dependsOn project.tasks.signArchives
+    }
+
+    tasks.generatePomFileForMavenScalaPublication {
+        signArchives.dependsOn it
+        signArchives.sign it.outputs.files.singleFile
+    }
+}

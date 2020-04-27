@@ -1,0 +1,7 @@
+Documentation for Spark SCP.
+
+== Driver structure ==
+
+Notable packages include:
+
+    - [[com.github.arcizon.spark.scp SparkSCP]] The Spark SCP package to interact with remote files.
