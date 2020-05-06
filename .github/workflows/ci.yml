@@ -7,6 +7,10 @@ on:
     branches:
       - master
 
+env:
+  NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}
+  NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
+
 jobs:
   build:
     runs-on: ubuntu-latest

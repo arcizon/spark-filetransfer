@@ -68,6 +68,7 @@ artifacts {
 }
 
 signing {
+    required { gradle.taskGraph.hasTask("publish") }
     sign configurations.archives
 }
 
@@ -128,10 +129,12 @@ publishing {
         maven {
             def releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
             def snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots/"
+            def envNexusUsername=System.getenv("NEXUS_USERNAME")
+            def envNexusPassword=System.getenv("NEXUS_PASSWORD")
             url = version.endsWith("SNAPSHOT") ? snapshotsRepoUrl : releasesRepoUrl
             credentials {
-                username = nexusUsername
-                password = nexusPassword
+                username = envNexusUsername != null ? envNexusUsername : nexusUsername
+                password = envNexusPassword != null ? envNexusPassword : nexusPassword
             }
         }
     }
