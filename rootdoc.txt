@@ -1,7 +1,6 @@
-Documentation for Spark SCP.
+== Documentation for Spark File Transfer ==
 
-== Driver structure ==
+Notable classes include:
 
-Notable packages include:
-
-    - [[com.github.arcizon.spark.scp SparkSCP]] The Spark SCP package to interact with remote files.
+    - [[com.github.arcizon.spark.filetransfer.DefaultSource DefaultSource]] source class for DataFrame Reader/Writer.
+    - [[com.github.arcizon.spark.filetransfer.util.FileTransferOptions$ FileTransferOptions]] for options to be set on the DataFrame Reader/Writer.
