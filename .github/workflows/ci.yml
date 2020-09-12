@@ -5,7 +5,7 @@ on:
   push:
   pull_request:
     branches:
-      - master
+      - main
 
 env:
   NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}
@@ -29,5 +29,17 @@ jobs:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
-      - name: Build with Gradle
-        run: ./gradlew build
+      - name: Unit tests
+        run: ./gradlew test -PallScalaVersions
+      - name: Integration tests
+        run: ./gradlew integrationTest -PallScalaVersions
+      - name: Build
+        run: ./gradlew build -x test -PallScalaVersions
+      - name: Report Code Coverage
+        run: ./gradlew reportScoverage
+      - name: Upload Code Coverage Report
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./build/reports/scoverage/cobertura.xml
+          name: codecov-spark-filetransfer

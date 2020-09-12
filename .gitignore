@@ -16,3 +16,8 @@ gradle-app.setting
 # gradle/wrapper/gradle-wrapper.properties
 
 .idea/
+
+src/test/resources/sftp/upload/*
+!src/test/resources/sftp/upload/README.txt
+
+src/main/scala/com/github/arcizon/spark/filetransfer/Driver.scala
