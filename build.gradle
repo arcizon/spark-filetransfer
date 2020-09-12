@@ -56,7 +56,10 @@ task cleanTestResources(type: Exec) {
     }
 }
 
-clean.dependsOn(cleanTestResources, dockerRemoveContainer)
+clean {
+    dependsOn(cleanTestResources, dockerStop, dockerRemoveContainer)
+    delete = ['target/', 'derby.log']
+}
 
 task scaladocJar(type: Jar, dependsOn: scaladoc) {
     classifier "javadoc"
@@ -103,12 +106,15 @@ dockerRun {
     env SFTP_USERS: "foo:pass:1001"
 }
 
+dockerRemoveContainer.mustRunAfter(dockerStop)
+
 task integrationTest(type: Test) {
+    maxParallelForks = 1
     tags {
         include "com.github.arcizon.spark.filetransfer.IntegrationTest"
     }
-    dependsOn([tasks.dockerRemoveContainer, tasks.dockerRun])
-    finalizedBy(tasks.dockerStop)
+    dependsOn(tasks.dockerRun)
+    finalizedBy(tasks.dockerStop, tasks.dockerRemoveContainer)
 }
 
 scoverage {

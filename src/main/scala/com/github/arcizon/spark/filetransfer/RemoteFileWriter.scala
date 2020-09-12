@@ -1,22 +1,19 @@
 package com.github.arcizon.spark.filetransfer
 
 import java.io.File
+import java.util.UUID
 
 import com.github.arcizon.spark.filetransfer.client.fileTransferClient
 import com.github.arcizon.spark.filetransfer.util.{
+  DfsUtils,
   FileTransferOptions,
   FileUtils
 }
+import org.apache.hadoop.fs.Path
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{
-  DataFrame,
-  DataFrameWriter,
-  Row,
-  SQLContext,
-  SaveMode
-}
+import org.apache.spark.sql._
 
 /**
   * Spark File Transfer '''DataFrameWriter''' API class.
@@ -40,11 +37,14 @@ private[filetransfer] case class RemoteFileWriter(
   override def schema: StructType = data.schema
 
   private val options: FileTransferOptions = new FileTransferOptions(parameters)
-  private val tempDir: String = FileUtils
+  private val tempDir: File = FileUtils
     .createTempDir(
       root = options.localTempPath
     )
-    .getCanonicalPath
+  private val dfsTempDir: Path = new Path(
+    options.dfsTempPath,
+    UUID.randomUUID().toString
+  )
 
   private val dfw: DataFrameWriter[Row] = data.write
 
@@ -52,8 +52,12 @@ private[filetransfer] case class RemoteFileWriter(
     .options(options.dfOptions)
     .format(options.fileFormat.toString)
     .mode(mode)
-    .save(tempDir)
+    .save(dfsTempDir.toString)
 
-  private val uploadPath: String = FileUtils.collectUploadFiles(tempDir)
+  val dfs: DfsUtils = new DfsUtils(sqlContext)
+  dfs.copyToLocal(dfsTempDir.toString, tempDir.getCanonicalPath)
+  private val uploadPath: String = FileUtils.collectUploadFiles(
+    new File(tempDir, dfsTempDir.getName).getCanonicalPath
+  )
   fileTransferClient(options).upload(uploadPath, options.path)
 }

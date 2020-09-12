@@ -1,10 +1,15 @@
 package com.github.arcizon.spark.filetransfer
 
+import java.io.File
+import java.util.UUID
+
 import com.github.arcizon.spark.filetransfer.client.fileTransferClient
 import com.github.arcizon.spark.filetransfer.util.{
+  DfsUtils,
   FileTransferOptions,
   FileUtils
 }
+import org.apache.hadoop.fs.Path
 import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.sources.{BaseRelation, TableScan}
@@ -30,11 +35,14 @@ private[filetransfer] case class RemoteFileReader(
     with Logging {
 
   private val options: FileTransferOptions = new FileTransferOptions(parameters)
-  private val tempDir: String = FileUtils
+  private val tempDir: File = FileUtils
     .createTempDir(
       root = options.localTempPath
     )
-    .getCanonicalPath
+  private val dfsTempDir: Path = new Path(
+    options.dfsTempPath,
+    UUID.randomUUID().toString
+  )
 
   private val df: DataFrame = {
     var dfr: DataFrameReader = sqlContext.read
@@ -43,12 +51,14 @@ private[filetransfer] case class RemoteFileReader(
       dfr = dfr.schema(customSchema)
     }
 
-    fileTransferClient(options).download(options.path, tempDir)
+    fileTransferClient(options).download(options.path, tempDir.getCanonicalPath)
+    val dfs: DfsUtils = new DfsUtils(sqlContext)
+    dfs.copyFromLocal(tempDir.getCanonicalPath, dfsTempDir.toString)
 
     dfr
       .options(options.dfOptions)
       .format(options.fileFormat.toString)
-      .load(tempDir)
+      .load(dfsTempDir.toString)
   }
 
   override def schema(): StructType = {

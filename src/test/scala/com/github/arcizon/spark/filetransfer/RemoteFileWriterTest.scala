@@ -8,9 +8,12 @@ import com.github.arcizon.spark.filetransfer.testfactory.{
 }
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SaveMode}
-import org.scalatest.FunSuite
+import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
-class RemoteFileWriterTest extends FunSuite with SparkFactory {
+class RemoteFileWriterTest
+    extends FunSuite
+    with SparkFactory
+    with BeforeAndAfterAll {
 
   private var params: Map[String, String] = _
   private var customSchema: StructType = _
