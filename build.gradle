@@ -58,7 +58,7 @@ task cleanTestResources(type: Exec) {
 
 clean {
     dependsOn(cleanTestResources, dockerStop, dockerRemoveContainer)
-    delete = ['target/', 'derby.log']
+    delete.addAll(["target/", "derby.log"])
 }
 
 task scaladocJar(type: Jar, dependsOn: scaladoc) {
