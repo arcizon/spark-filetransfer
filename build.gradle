@@ -37,8 +37,10 @@ dependencies {
     implementation "org.scala-lang:scala-library:%scala-version%"
     implementation "com.jcraft:jsch:${jschVersion}"
     shadow "org.apache.spark:spark-sql_%%:${sparkVersion}"
+    shadow "org.apache.spark:spark-avro_%%:${sparkVersion}"
 
     testImplementation "com.holdenkarau:spark-testing-base_%%:${sparkVersion}_${sparkTestingBaseVersion}"
+    testImplementation "org.apache.spark:spark-avro_%%:${sparkVersion}"
     testImplementation "org.scalamock:scalamock_%%:${scalaMockVersion}"
 
     testRuntime "org.pegdown:pegdown:${pegdownVersion}"
@@ -127,7 +129,7 @@ scoverage {
 scaladoc {
     title = "Spark File Transfer v${project.version} API"
     scalaDocOptions.setAdditionalParameters([
-            "-doc-root-content", "rootdoc.txt",
+            "-doc-root-content", "${rootDir}/rootdoc.txt",
             "-nowarn",
             "-groups",
             "-implicits"

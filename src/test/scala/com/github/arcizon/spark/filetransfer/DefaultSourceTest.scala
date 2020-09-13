@@ -79,14 +79,13 @@ class DefaultSourceTest
       "password" -> "pass",
       "fileFormat" -> "json",
       "dfsTempPath" -> hdfsTempPath.toString,
-      "path" -> s"data/upload/${UUID.randomUUID().toString}",
       "multiLine" -> "true"
     )
     df.write
       .format(this.getClass.getPackage.getName)
       .mode(SaveMode.Overwrite)
       .options(writeOptions)
-      .save()
+      .save(s"data/upload/${UUID.randomUUID().toString}")
   }
 
 }
