@@ -6,11 +6,30 @@ import com.github.arcizon.spark.filetransfer.testfactory.{
   IntegrationTest,
   SparkFactory
 }
+import com.holdenkarau.spark.testing.HDFSClusterLike
+import org.apache.hadoop.fs.Path
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Row, SaveMode}
-import org.scalatest.FunSuite
+import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
-class DefaultSourceTest extends FunSuite with SparkFactory {
+class DefaultSourceTest
+    extends FunSuite
+    with HDFSClusterLike
+    with SparkFactory
+    with BeforeAndAfterAll {
+
+  private var hdfsTempPath: Path = _
+
+  override def beforeAll(): Unit = {
+    super.startHDFS()
+    hdfsTempPath = new Path(super.getNameNodeURI(), "/tests")
+    super.beforeAll()
+  }
+
+  override def afterAll(): Unit = {
+    super.afterAll()
+    super.shutdownHDFS()
+  }
 
   test(
     "Reading remote dataset via this datasource on classpath",
@@ -22,6 +41,7 @@ class DefaultSourceTest extends FunSuite with SparkFactory {
       "username" -> "foo",
       "password" -> "pass",
       "fileFormat" -> "csv",
+      "dfsTempPath" -> hdfsTempPath.toString,
       "path" -> "data/sparkdata/iris.csv",
       "delimiter" -> ",",
       "header" -> "true"
@@ -58,6 +78,7 @@ class DefaultSourceTest extends FunSuite with SparkFactory {
       "username" -> "foo",
       "password" -> "pass",
       "fileFormat" -> "json",
+      "dfsTempPath" -> hdfsTempPath.toString,
       "path" -> s"data/upload/${UUID.randomUUID().toString}",
       "multiLine" -> "true"
     )

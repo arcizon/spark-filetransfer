@@ -59,7 +59,7 @@ private[filetransfer] object FileUtils {
       }
       partsDir.getCanonicalPath
     } else {
-      files(0).getCanonicalPath
+      files.head.getCanonicalPath
     }
   }
 

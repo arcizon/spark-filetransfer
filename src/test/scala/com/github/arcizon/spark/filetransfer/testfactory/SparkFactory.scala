@@ -9,40 +9,44 @@ import org.apache.spark.SparkConf
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.internal.SQLConf
-import org.scalatest.{BeforeAndAfterAll, Suite}
+import org.scalatest.{BeforeAndAfterEach, Suite}
 
-trait SparkFactory extends BeforeAndAfterAll with Logging {
+trait SparkFactory extends BeforeAndAfterEach with Logging {
   this: Suite =>
 
-  private val tempDir: File = FileUtils.createTempDir(
-    System.getProperty("java.io.tmpdir", "/tmp")
-  )
-  private val localWarehousePath: File = new File(tempDir, "warehouse")
-  private val localMetastorePath = new File(tempDir, "metastore")
   var appLogLevel: Level = Level.INFO
   var spark: SparkSession = _
 
-  override def beforeAll(): Unit = {
-    spark = getSparkSession
-    super.beforeAll()
+  override def beforeEach(): Unit = {
+    spark = getSparkSession()
+    super.beforeEach()
   }
 
-  override def afterAll(): Unit = {
-    super.afterAll()
+  override def afterEach(): Unit = {
+    super.afterEach()
+    spark.stop()
   }
 
-  private def getSparkSession: SparkSession = {
-    val ssb: SparkSession.Builder = SparkSession.builder.config(sparkConfig())
-    if (enableHiveSupportFlag) ssb.enableHiveSupport()
+  def getSparkSession(
+      conf: Option[SparkConf] = None,
+      enableHiveSupport: Boolean = true
+  ): SparkSession = {
+    val ssb: SparkSession.Builder =
+      SparkSession.builder.config(sparkConfig(conf))
+    if (enableHiveSupport) ssb.enableHiveSupport()
     val ss: SparkSession = ssb.getOrCreate()
     ss.sparkContext.setLogLevel(appLogLevel.toString)
     ss
   }
 
-  def enableHiveSupportFlag: Boolean = true
+  def sparkConfig(sparkConf: Option[SparkConf]): SparkConf = {
+    if (sparkConf.isEmpty) {
+      val tempDir: File = FileUtils.createTempDir(
+        System.getProperty("java.io.tmpdir", "/tmp")
+      )
+      val localWarehousePath: File = new File(tempDir, "warehouse")
+      val localMetastorePath: File = new File(tempDir, "metastore")
 
-  private def sparkConfig(sparkConf: SparkConf = null): SparkConf = {
-    if (sparkConf == null) {
       val conf: SparkConf = new SparkConf()
       conf.setAppName("SparkFileTransferTesting")
       conf.set("spark.app.id", applicationID)
@@ -70,11 +74,11 @@ trait SparkFactory extends BeforeAndAfterAll with Logging {
       conf.set("hive.exec.dynamic.partition.mode", "nonstrict")
       conf
     } else {
-      sparkConf
+      sparkConf.get
     }
   }
 
-  private def applicationID: String =
+  def applicationID: String =
     this.getClass.getName + math.floor(math.random * 10e4).toLong.toString
 
   private case class WrappedConfVar(cv: ConfVars) {
