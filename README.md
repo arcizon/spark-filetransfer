@@ -121,6 +121,7 @@ val df = spark.read
   .option("delimiter", ",")
   .option("header", "true")
   .option("inferSchema", "true")
+  .option("dfsTempPath", "hdfs:///test/tmp")
   .load("data/sparkdata/")
 
 // Write Spark DataFrame in JSON File format on the remote machine via provided protocol
@@ -133,6 +134,7 @@ df.write
   .option("password", "pass")
   .option("fileFormat", "json")
   .option("uploadFilePrefix", "sample")
+  .option("dfsTempPath", "hdfs:///test/tmp")
   .save("data/upload/output/")
 ```
 
@@ -147,6 +149,7 @@ Dataset<Row> df = spark.read()
     .option("username", "foo")
     .option("password", "pass")
     .option("fileFormat", "text")
+    .option("dfsTempPath", "hdfs:///test/tmp")
     .load("data/example.txt");
 
 // Write Spark DataFrame in AVRO File format on the remote machine via provided protocol
@@ -158,6 +161,7 @@ df.write()
     .option("username", "foo")
     .option("password", "pass")
     .option("fileFormat", "avro")
+    .option("dfsTempPath", "hdfs:///test/tmp")
     .save("data/upload/out/");
 ```
 
@@ -172,6 +176,7 @@ df = spark.read \
     .option("username", "foo") \
     .option("password", "pass") \
     .option("fileFormat", "json") \
+    .option("dfsTempPath", "hdfs:///test/tmp") \
     .load("data/sparkdata/sample.json")
 
 ## Write Spark DataFrame in ORC File format on the remote machine via provided protocol
@@ -183,6 +188,7 @@ df.write \
     .option("username", "foo") \
     .option("password", "pass") \
     .option("fileFormat", "orc") \
+    .option("dfsTempPath", "hdfs:///test/tmp") \
     .save("data/upload/output/")
 ```
 
