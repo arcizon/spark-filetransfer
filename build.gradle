@@ -7,6 +7,7 @@ plugins {
     id "com.github.maiflai.scalatest" version "0.26"
     id "org.scoverage" version "4.0.2"
     id "com.diffplug.gradle.spotless" version "4.5.1"
+    id "nebula.maven-resolved-dependencies" version "17.3.2"
     id "com.github.johnrengelman.shadow" version "6.0.0"
     id "maven-publish"
     id "signing"
@@ -37,7 +38,6 @@ dependencies {
     implementation "org.scala-lang:scala-library:%scala-version%"
     implementation "com.jcraft:jsch:${jschVersion}"
     shadow "org.apache.spark:spark-sql_%%:${sparkVersion}"
-    shadow "org.apache.spark:spark-avro_%%:${sparkVersion}"
 
     testImplementation "com.holdenkarau:spark-testing-base_%%:${sparkVersion}_${sparkTestingBaseVersion}"
     testImplementation "org.apache.spark:spark-avro_%%:${sparkVersion}"
@@ -63,9 +63,14 @@ clean {
     delete.addAll(["target/", "derby.log"])
 }
 
+task sourcesJar(type: Jar, dependsOn: classes) {
+    archiveClassifier.set("sources")
+    from sourceSets.main.allScala, "LICENSE"
+}
+
 task scaladocJar(type: Jar, dependsOn: scaladoc) {
-    classifier "javadoc"
-    from scaladoc
+    archiveClassifier.set("javadoc")
+    from scaladoc, "LICENSE"
 }
 
 spotless {
@@ -74,9 +79,8 @@ spotless {
     }
 }
 
-jar.enabled = false
-
 shadowJar {
+    from "LICENSE"
     archiveClassifier.set(null)
     zip64 = true
     manifest {
@@ -91,6 +95,8 @@ shadowJar {
         )
     }
     mergeServiceFiles()
+    project.configurations.implementation.canBeResolved = true
+    configurations = [project.configurations.implementation]
 }
 
 test {
@@ -136,8 +142,12 @@ scaladoc {
     ])
 }
 
+jar {
+    archiveClassifier.set("obfuscated")
+}
+
 artifacts {
-    archives shadowJar, scaladocJar
+    archives shadowJar, sourcesJar, scaladocJar
 }
 
 signing {
@@ -145,12 +155,11 @@ signing {
     sign configurations.archives
 }
 
+
 publishing {
     publications {
         mavenScala(MavenPublication) {
             from components.java
-            artifact shadowJar
-            artifact scaladocJar
 
             signArchives.signatures.each { signature ->
                 artifact(signature) {
@@ -158,7 +167,7 @@ publishing {
                 }
             }
 
-            artifact(file("$buildDir/publications/mavenScala/pom-default.xml.asc")) {
+            artifact(file("$buildDir/publications/mavenScala/$scalaVersion/pom-default.xml.asc")) {
                 extension "pom.asc"
                 builtBy signArchives
             }
@@ -195,6 +204,23 @@ publishing {
                         url = "http://opensource.org/licenses/MIT"
                     }
                 }
+                withXml {
+                    // Scala Multi Version plugin doesn't support Gradle 6.0+ yet
+                    asNode().dependencies.dependency.findAll() {
+                        it.scope.text() == 'runtime' && project.configurations.implementation.allDependencies.find { dep ->
+                            dep.name == it.artifactId.text()
+                        }
+                    }.each { it.scope*.value = 'compile' }
+
+                    def dependenciesNode = asNode().get("dependencies").getAt(0)
+                    project.configurations.shadow.allDependencies.forEach {
+                        def dependencyNode = dependenciesNode.appendNode("dependency")
+                        dependencyNode.appendNode("groupId", it.group)
+                        dependencyNode.appendNode("artifactId", it.name.replace(scalaMultiVersion.scalaSuffixPlaceholder, scalaSuffix))
+                        dependencyNode.appendNode("version", it.version)
+                        dependencyNode.appendNode("scope", "provided")
+                    }
+                }
             }
         }
     }
@@ -213,7 +239,11 @@ publishing {
     }
 }
 
-nexusStaging {
+nexusStaging {}
+
+
+tasks.withType(GenerateModuleMetadata) {
+    enabled = false
 }
 
 model {
@@ -225,6 +255,7 @@ model {
     }
 
     tasks.generatePomFileForMavenScalaPublication {
+        setDestination(file("$buildDir/publications/mavenScala/$scalaVersion/pom-default.xml"))
         signArchives.dependsOn it
         signArchives.sign it.outputs.files.singleFile
     }
