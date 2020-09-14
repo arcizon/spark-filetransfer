@@ -33,7 +33,7 @@ jobs:
       - name: Archive Unit Test results
         uses: actions/upload-artifact@v2
         with:
-          name: integration-test-report
+          name: unit-test-report
           path: ./build/reports/tests/test
       - name: Integration tests
         run: ./gradlew integrationTest -PallScalaVersions

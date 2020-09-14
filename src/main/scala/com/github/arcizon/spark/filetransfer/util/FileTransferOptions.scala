@@ -145,6 +145,17 @@ class FileTransferOptions(
   val dfsTempPath: String = parameters.getOrElse(DFS_TEMP_PATH, localTempPath)
 
   /**
+    * Value set with the option key __uploadFilePrefix__.
+    * Default value set to `part`.
+    *
+    * @since 0.1.0
+    */
+  val uploadFilePrefix: String = parameters.getOrElse(
+    UPLOAD_FILE_PREFIX,
+    "part"
+  )
+
+  /**
     * All other options except the extracted options from the above
     * to be passed along to the '''DataFrame API''' for read/write.
     * For example, csv options like ''delimiter'' for the `csv` file format etc.
@@ -240,6 +251,13 @@ object FileTransferOptions {
   val DFS_TEMP_PATH: String = "dfsTempPath"
 
   /**
+    * Constant for the option key __uploadFilePrefix__.
+    *
+    * @since 0.1.0
+    */
+  val UPLOAD_FILE_PREFIX: String = "uploadFilePrefix"
+
+  /**
     * Set of all the Spark File Transfer options above
     * that will be excluded from the overall options
     * set on the DataFrame API.
@@ -257,6 +275,7 @@ object FileTransferOptions {
     FILE_FORMAT,
     PATH,
     LOCAL_TEMP_PATH,
-    DFS_TEMP_PATH
+    DFS_TEMP_PATH,
+    UPLOAD_FILE_PREFIX
   )
 }

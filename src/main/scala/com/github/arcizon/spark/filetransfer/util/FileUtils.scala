@@ -34,14 +34,15 @@ private[filetransfer] object FileUtils {
     * filtering out the flag files created by the
     * [[org.apache.spark.sql.DataFrameWriter DataFrameWriter]]
     * and moves the part files by renaming them with index
-    * like `part-0` into a parts directory.
+    * like `<prefix>-0` into a parts directory.
     *
     * @param path Local Path to spark `DataFrame` write output.
+    * @param prefix Prefix for the upload file name.
     * @return Canonical Path to local output files to upload to remote host.
     *
     * @since 0.1.0
     */
-  def collectUploadFiles(path: String): String = {
+  def collectUploadFiles(path: String, prefix: String): String = {
     val srcPath: File = new File(path)
     val files = srcPath.listFiles().filter { x =>
       (!x.isDirectory
@@ -56,7 +57,7 @@ private[filetransfer] object FileUtils {
     val partsDir = new File(srcPath, "parts")
     partsDir.mkdir()
     for (i <- files.indices) {
-      files(i).renameTo(new File(partsDir, s"part-$i.$ext"))
+      files(i).renameTo(new File(partsDir, s"$prefix-$i.$ext"))
     }
     partsDir.getCanonicalPath
   }
