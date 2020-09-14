@@ -30,12 +30,27 @@ jobs:
           restore-keys: ${{ runner.os }}-gradle
       - name: Unit tests
         run: ./gradlew test -PallScalaVersions
+      - name: Archive Unit Test results
+        uses: actions/upload-artifact@v2
+        with:
+          name: integration-test-report
+          path: ./build/reports/tests/test
       - name: Integration tests
         run: ./gradlew integrationTest -PallScalaVersions
+      - name: Archive Integration Test results
+        uses: actions/upload-artifact@v2
+        with:
+          name: integration-test-report
+          path: ./build/reports/tests/integrationTest
       - name: Build
         run: ./gradlew build -x test -PallScalaVersions
       - name: Report Code Coverage
         run: ./gradlew reportScoverage
+      - name: Archive Code Coverage results
+        uses: actions/upload-artifact@v2
+        with:
+          name: code-coverage-report
+          path: ./build/reports/scoverage
       - name: Upload Code Coverage Report
         uses: codecov/codecov-action@v1
         with:

@@ -34,7 +34,7 @@ class FileUtilsTest extends FunSuite with FileFactory {
     outFiles.foreach(x => new File(file, x).createNewFile())
     val upload: String =
       FileUtils.collectUploadFiles(file.getAbsolutePath)
-    assert(upload.endsWith("part-000-123.csv"))
+    assert(upload.endsWith("part-0.csv"))
   }
 
   test("Collect Multiple Spark Part files") {
@@ -60,5 +60,11 @@ class FileUtilsTest extends FunSuite with FileFactory {
   test("Creating temporary directory") {
     val temp: File = FileUtils.createTempDir(file.getAbsolutePath)
     assert(temp.getName.startsWith("spark-filetransfer-"))
+  }
+
+  test("Unable to extract file extension") {
+    assertThrows[RuntimeException](
+      FileUtils.getFileExt(new File("test/sample"))
+    )
   }
 }

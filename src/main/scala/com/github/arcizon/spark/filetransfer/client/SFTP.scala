@@ -62,10 +62,8 @@ class SFTP(options: FileTransferOptions) extends BaseClient with Logging {
   /** @inheritdoc */
   def upload(src: String, dest: String): Unit = {
     val srcPath: File = new File(src)
-    val files: List[File] = if (srcPath.isDirectory) {
-      srcPath.listFiles().toList
-    } else {
-      List(srcPath)
+    val files: List[File] = {
+      Try(srcPath.listFiles().toList).getOrElse(List(srcPath))
     }
 
     val client: ChannelSftp = connect
