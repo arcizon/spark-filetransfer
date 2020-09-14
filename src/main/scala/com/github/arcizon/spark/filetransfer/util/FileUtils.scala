@@ -3,6 +3,8 @@ package com.github.arcizon.spark.filetransfer.util
 import java.io.{File, IOException}
 import java.util.UUID
 
+import scala.util.Try
+
 /**
   * Utilities with the file system operations.
   *
@@ -32,15 +34,15 @@ private[filetransfer] object FileUtils {
     * filtering out the flag files created by the
     * [[org.apache.spark.sql.DataFrameWriter DataFrameWriter]]
     * and moves the part files by renaming them with index
-    * like `part-1` into a parts directory if more than one
-    * file is found.
+    * like `<prefix>-0` into a parts directory.
     *
     * @param path Local Path to spark `DataFrame` write output.
+    * @param prefix Prefix for the upload file name.
     * @return Canonical Path to local output files to upload to remote host.
     *
     * @since 0.1.0
     */
-  def collectUploadFiles(path: String): String = {
+  def collectUploadFiles(path: String, prefix: String): String = {
     val srcPath: File = new File(path)
     val files = srcPath.listFiles().filter { x =>
       (!x.isDirectory
@@ -50,17 +52,14 @@ private[filetransfer] object FileUtils {
       && !x.getName.contains("_committed_")
       && !x.getName.contains("_started_"))
     }
-    if (files.length > 1) {
-      val partsDir = new File(srcPath, "parts")
-      partsDir.mkdir()
-      val ext: String = files.head.getName.split("\\.", 2)(1)
-      for (i <- files.indices) {
-        files(i).renameTo(new File(partsDir, s"part-$i.$ext"))
-      }
-      partsDir.getCanonicalPath
-    } else {
-      files.head.getCanonicalPath
+    val headFile: File = files.head
+    val ext: String = getFileExt(headFile)
+    val partsDir = new File(srcPath, "parts")
+    partsDir.mkdir()
+    for (i <- files.indices) {
+      files(i).renameTo(new File(partsDir, s"$prefix-$i.$ext"))
     }
+    partsDir.getCanonicalPath
   }
 
   /**
@@ -108,5 +107,23 @@ private[filetransfer] object FileUtils {
     }
 
     dir
+  }
+
+  /**
+    * Extracts file extension from the provided file.
+    *
+    * @param file A file with possible extension to be extracted
+    * @return The file extension
+    *
+    * @since 0.1.0
+    */
+  @throws[RuntimeException]
+  def getFileExt(file: File): String = {
+    Try(file.getName.split("\\.", 2)(1))
+      .getOrElse(
+        sys.error(
+          "Unable to extract the extension of the file to be uploaded!!"
+        )
+      )
   }
 }

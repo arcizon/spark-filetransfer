@@ -57,7 +57,8 @@ private[filetransfer] case class RemoteFileWriter(
   val dfs: DfsUtils = new DfsUtils(sqlContext)
   dfs.copyToLocal(dfsTempDir.toString, tempDir.getCanonicalPath)
   private val uploadPath: String = FileUtils.collectUploadFiles(
-    new File(tempDir, dfsTempDir.getName).getCanonicalPath
+    new File(tempDir, dfsTempDir.getName).getCanonicalPath,
+    options.uploadFilePrefix
   )
   fileTransferClient(options).upload(uploadPath, options.path)
 }

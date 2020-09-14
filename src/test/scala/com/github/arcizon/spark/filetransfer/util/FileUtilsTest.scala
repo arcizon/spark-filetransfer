@@ -24,20 +24,7 @@ class FileUtilsTest extends FunSuite with FileFactory {
     assert(caught.getMessage === expectedMsg)
   }
 
-  test("Collect Single Spark Part files") {
-    file = new File(tmpDir, "single")
-    file.mkdirs()
-    val outFiles: List[String] = List(
-      "_SUCCESS",
-      "part-000-123.csv"
-    )
-    outFiles.foreach(x => new File(file, x).createNewFile())
-    val upload: String =
-      FileUtils.collectUploadFiles(file.getAbsolutePath)
-    assert(upload.endsWith("part-000-123.csv"))
-  }
-
-  test("Collect Multiple Spark Part files") {
+  test("Collect Spark Part files") {
     file = new File(tmpDir, "multiple")
     file.mkdirs()
     val outFiles: List[String] = List(
@@ -47,18 +34,24 @@ class FileUtilsTest extends FunSuite with FileFactory {
     )
     outFiles.foreach(x => new File(file, x).createNewFile())
     val upload: String =
-      FileUtils.collectUploadFiles(file.getAbsolutePath)
+      FileUtils.collectUploadFiles(file.getAbsolutePath, "test")
     val parts: List[String] = new File(upload)
       .listFiles()
       .toList
       .map(
         _.getName
       )
-    assert(parts.sorted == List("part-0.txt", "part-1.txt"))
+    assert(parts.sorted == List("test-0.txt", "test-1.txt"))
   }
 
   test("Creating temporary directory") {
     val temp: File = FileUtils.createTempDir(file.getAbsolutePath)
     assert(temp.getName.startsWith("spark-filetransfer-"))
+  }
+
+  test("Unable to extract file extension") {
+    assertThrows[RuntimeException](
+      FileUtils.getFileExt(new File("test/sample"))
+    )
   }
 }
