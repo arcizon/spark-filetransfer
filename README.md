@@ -24,6 +24,8 @@ This library requires Apache Spark 2.x
 ## Linking
 You can link against this library in your program at the following coordinates:
 
+Latest releases for this package can be found [here](https://search.maven.org/search?q=g:com.github.arcizon%20AND%20spark-filetransfer).
+
 ### Scala 2.11
 ```
 groupId: com.github.arcizon
