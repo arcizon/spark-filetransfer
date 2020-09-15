@@ -34,5 +34,3 @@ jobs:
           restore-keys: ${{ runner.os }}-gradle
       - name: Publish to Staging
         run: ./gradlew publish -PallScalaVersions -Psigning.gnupg.keyName=${{ secrets.OSSRH_GPG_SECRET_KEY_NAME }} -Psigning.gnupg.passphrase=${{ secrets.OSSRH_GPG_SECRET_KEY_PASSPHRASE }}
-      - name: Release to Central Repository
-        run: ./gradlew closeAndReleaseRepository

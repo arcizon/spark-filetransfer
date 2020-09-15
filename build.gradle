@@ -161,6 +161,8 @@ publishing {
     publications {
         mavenScala(MavenPublication) {
             from components.java
+            artifact sourcesJar
+            artifact scaladocJar
 
             signArchives.signatures.each { signature ->
                 artifact(signature) {
