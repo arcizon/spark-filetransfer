@@ -14,6 +14,7 @@ jobs:
     strategy:
       matrix:
         java: [ '1.8' ]
+        scala: [ '2.11.12', '2.12.11' ]
     steps:
       - uses: actions/checkout@master
       - name: Import GPG key
@@ -32,7 +33,5 @@ jobs:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
-      - name: Build Artifacts
-        run: ./gradlew build -PallScalaVersions -Psigning.gnupg.keyName=${{ secrets.OSSRH_GPG_SECRET_KEY_NAME }} -Psigning.gnupg.passphrase=${{ secrets.OSSRH_GPG_SECRET_KEY_PASSPHRASE }}
-      - name: Publish to Staging
-        run: ./gradlew publish -PallScalaVersions
+      - name: Publish to Staging (Scala ${{ matrix.scala }})
+        run: ./gradlew publish -PdefaultScalaVersions=${{ matrix.scala }} -Psigning.gnupg.keyName=${{ secrets.OSSRH_GPG_SECRET_KEY_NAME }} -Psigning.gnupg.passphrase=${{ secrets.OSSRH_GPG_SECRET_KEY_PASSPHRASE }}

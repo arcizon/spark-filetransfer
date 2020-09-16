@@ -42,8 +42,8 @@ configurations {
 }
 
 ext {
-    nexusUsername=findProperty("nexusUsername")
-    nexusPassword=findProperty("nexusPassword")
+    NexusUsername=findProperty("nexusUsername") != null ? findProperty("nexusUsername").toString() : System.getenv("NEXUS_USERNAME")
+    NexusPassword=findProperty("nexusPassword") != null ? findProperty("nexusPassword").toString() : System.getenv("NEXUS_PASSWORD")
     isReleaseVersion = version.toString() ==~ "^[0-9]+.[0-9]+.[0-9]+\$"
 }
 
@@ -247,18 +247,19 @@ publishing {
         maven {
             def releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
             def snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots/"
-            def envNexusUsername=System.getenv("NEXUS_USERNAME")
-            def envNexusPassword=System.getenv("NEXUS_PASSWORD")
             url = version.endsWith("SNAPSHOT") ? snapshotsRepoUrl : releasesRepoUrl
             credentials {
-                username = envNexusUsername != null ? envNexusUsername : project.ext.nexusUsername
-                password = envNexusPassword != null ? envNexusPassword : project.ext.nexusPassword
+                username = NexusUsername
+                password = NexusPassword
             }
         }
     }
 }
 
-nexusStaging {}
+nexusStaging {
+    username = NexusUsername
+    password = NexusPassword
+}
 
 
 tasks.withType(GenerateModuleMetadata) {
