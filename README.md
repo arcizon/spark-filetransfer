@@ -109,11 +109,15 @@ use short name `filetransfer` instead of the full package name `com.github.arciz
 for the __format__.
 
 ### Scala API
+Import `com.github.arcizon.spark.filetransfer._` to get implicits that add the supported protocol
+methods like `.sftp(...)` method to the DataFrame API for read and write. 
+Alternatively, you can also use .format("filetransfer") with .option("protocol", "sftp").
+
 ```scala
+import com.github.arcizon.spark.filetransfer._
+
 // Construct Spark DataFrame from CSV files directory on the remote machine via provided protocol
 val df = spark.read
-  .format("filetransfer")
-  .option("protocol", "sftp")
   .option("host", "example.com")
   .option("port", "22")
   .option("username", "foo")
@@ -123,12 +127,10 @@ val df = spark.read
   .option("header", "true")
   .option("inferSchema", "true")
   .option("dfsTempPath", "hdfs:///test/tmp")
-  .load("data/sparkdata/")
+  .sftp("data/sparkdata/")
 
 // Write Spark DataFrame in JSON File format on the remote machine via provided protocol
 df.write
-  .format("filetransfer")
-  .option("protocol", "sftp")
   .option("host", "example.com")
   .option("port", "22")
   .option("username", "foo")
@@ -136,7 +138,7 @@ df.write
   .option("fileFormat", "json")
   .option("uploadFilePrefix", "sample")
   .option("dfsTempPath", "hdfs:///test/tmp")
-  .save("data/upload/output/")
+  .sftp("data/upload/output/")
 ```
 
 ### Java API
