@@ -76,7 +76,7 @@ Optional if **password** is provided.
 * `passphrase` - Passphrase for the private key file supplied for authentication.
 * `fileFormat` - File format of the remote file to read/write.
 Allowed file formats are avro, csv, json, orc, parquet, text, xml. Non-native Spark datasources
-like _avro_ [from Spark 2.4+](https://spark.apache.org/docs/2.4.0/sql-data-sources-avro.html#deploying)
+like _avro_ [from Spark 2.4+](https://spark.apache.org/docs/latest/sql-data-sources-avro.html#deploying)
 and _xml_ [datasource](https://github.com/databricks/spark-xml#linking) expects their datasource packages
 to be available on classpath to work.
 * `localTempPath` - Temporary directory on the local disk. Default set to the value of Java System

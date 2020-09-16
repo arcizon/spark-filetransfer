@@ -1,7 +1,7 @@
 plugins {
     id "idea"
     id "scala"
-    id "net.nemerosa.versioning" version "2.14.0"
+    id "com.palantir.git-version" version "0.12.3"
     id "com.adtran.scala-multiversion-plugin" version "1.0.36"
     id "com.palantir.docker-run" version "0.25.0"
     id "com.github.maiflai.scalatest" version "0.26"
@@ -12,6 +12,8 @@ plugins {
     id "signing"
     id "io.codearte.nexus-staging" version "0.22.0"
 }
+
+version gitVersion()
 
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
@@ -31,6 +33,12 @@ scalaMultiVersion {
 repositories {
     mavenCentral()
     jcenter()
+}
+
+configurations {
+    implementation {
+        canBeResolved = true
+    }
 }
 
 dependencies {
@@ -86,11 +94,19 @@ jar {
         attributes(
                 'Built-By'       : System.properties['user.name'],
                 'Build-Timestamp': new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date()),
-                'Build-Revision' : versioning.info.commit,
+                'Build-Revision' : versionDetails().gitHashFull,
                 'Created-By'     : "Gradle ${gradle.gradleVersion}",
                 'Build-Jdk'      : "${System.properties['java.version']} (${System.properties['java.vendor']} ${System.properties['java.vm.version']})",
                 'Build-OS'       : "${System.properties['os.name']} ${System.properties['os.arch']} ${System.properties['os.version']}",
-                'Scala-Compiler-Version': scalaVersion
+                'Scala-Compiler-Version': scalaVersion,
+                'Implementation-Vendor': project.group,
+                'Implementation-Title': title,
+                'Implementation-Version': archiveVersion,
+                'Spark-HasRPackage': false,
+                'Specification-Vendor': project.group,
+                'Specification-Title': title,
+                'Specification-Version': archiveVersion,
+                'Class-Path': configurations.implementation.files.collect { it.getName() }.join(' ')
         )
     }
 }
@@ -252,5 +268,19 @@ model {
         setDestination(file("$buildDir/publications/mavenScala/$scalaVersion/pom-default.xml"))
         signArchives.dependsOn it
         signArchives.sign it.outputs.files.singleFile
+    }
+}
+
+task updateVersionInREADME() {
+    def scm = versionDetails()
+    def newVersion = findProperty("newVersion")
+    doLast {
+        if(newVersion != null || scm.isCleanTag) {
+            ant.replaceregexp(match: "([0-9]+\\.[0-9]+\\.[0-9]+)", replace: newVersion.toString(), flags: 'g', byline: true) {
+                fileset(dir: rootDir, includes: 'README.md')
+            }
+        } else {
+            throw new GradleException("README file can only be updated if the commit is tagged !!")
+        }
     }
 }
