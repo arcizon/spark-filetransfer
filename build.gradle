@@ -1,18 +1,19 @@
 plugins {
     id "idea"
     id "scala"
-    id "net.nemerosa.versioning" version "2.14.0"
+    id "com.palantir.git-version" version "0.12.3"
     id "com.adtran.scala-multiversion-plugin" version "1.0.36"
     id "com.palantir.docker-run" version "0.25.0"
     id "com.github.maiflai.scalatest" version "0.26"
     id "org.scoverage" version "4.0.2"
     id "com.diffplug.gradle.spotless" version "4.5.1"
     id "nebula.maven-resolved-dependencies" version "17.3.2"
-    id "com.github.johnrengelman.shadow" version "6.0.0"
     id "maven-publish"
     id "signing"
     id "io.codearte.nexus-staging" version "0.22.0"
 }
+
+version gitVersion()
 
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
@@ -34,10 +35,22 @@ repositories {
     jcenter()
 }
 
+configurations {
+    implementation {
+        canBeResolved = true
+    }
+}
+
+ext {
+    nexusUsername=findProperty("nexusUsername")
+    nexusPassword=findProperty("nexusPassword")
+    isReleaseVersion = version.toString() ==~ "^[0-9]+.[0-9]+.[0-9]+\$"
+}
+
 dependencies {
-    implementation "org.scala-lang:scala-library:%scala-version%"
     implementation "com.jcraft:jsch:${jschVersion}"
-    shadow "org.apache.spark:spark-sql_%%:${sparkVersion}"
+    implementation "org.scala-lang:scala-library:%scala-version%"
+    compileOnly "org.apache.spark:spark-sql_%%:${sparkVersion}"
 
     testImplementation "com.holdenkarau:spark-testing-base_%%:${sparkVersion}_${sparkTestingBaseVersion}"
     testImplementation "org.apache.spark:spark-avro_%%:${sparkVersion}"
@@ -79,7 +92,7 @@ spotless {
     }
 }
 
-shadowJar {
+jar {
     from "LICENSE"
     archiveClassifier.set(null)
     zip64 = true
@@ -87,16 +100,21 @@ shadowJar {
         attributes(
                 'Built-By'       : System.properties['user.name'],
                 'Build-Timestamp': new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date()),
-                'Build-Revision' : versioning.info.commit,
+                'Build-Revision' : versionDetails().gitHashFull,
                 'Created-By'     : "Gradle ${gradle.gradleVersion}",
                 'Build-Jdk'      : "${System.properties['java.version']} (${System.properties['java.vendor']} ${System.properties['java.vm.version']})",
                 'Build-OS'       : "${System.properties['os.name']} ${System.properties['os.arch']} ${System.properties['os.version']}",
-                'Scala-Compiler-Version': scalaVersion
+                'Scala-Compiler-Version': scalaVersion,
+                'Implementation-Vendor': project.group,
+                'Implementation-Title': title,
+                'Implementation-Version': archiveVersion,
+                'Spark-HasRPackage': false,
+                'Specification-Vendor': project.group,
+                'Specification-Title': title,
+                'Specification-Version': archiveVersion,
+                'Class-Path': configurations.implementation.files.collect { it.getName() }.join(' ')
         )
     }
-    mergeServiceFiles()
-    project.configurations.implementation.canBeResolved = true
-    configurations = [project.configurations.implementation]
 }
 
 test {
@@ -142,12 +160,8 @@ scaladoc {
     ])
 }
 
-jar {
-    archiveClassifier.set("obfuscated")
-}
-
 artifacts {
-    archives shadowJar, sourcesJar, scaladocJar
+    archives sourcesJar, scaladocJar
 }
 
 signing {
@@ -156,6 +170,9 @@ signing {
     sign configurations.archives
 }
 
+tasks.withType(Sign) {
+    onlyIf { isReleaseVersion }
+}
 
 publishing {
     publications {
@@ -208,7 +225,6 @@ publishing {
                     }
                 }
                 withXml {
-                    // Scala Multi Version plugin doesn't support Gradle 6.0+ yet
                     asNode().dependencies.dependency.findAll() {
                         it.scope.text() == 'runtime' && project.configurations.implementation.allDependencies.find { dep ->
                             dep.name == it.artifactId.text()
@@ -216,11 +232,11 @@ publishing {
                     }.each { it.scope*.value = 'compile' }
 
                     def dependenciesNode = asNode().get("dependencies").getAt(0)
-                    project.configurations.shadow.allDependencies.forEach {
+                    project.configurations.compileOnly.allDependencies.forEach {
                         def dependencyNode = dependenciesNode.appendNode("dependency")
                         dependencyNode.appendNode("groupId", it.group)
                         dependencyNode.appendNode("artifactId", it.name.replace(scalaMultiVersion.scalaSuffixPlaceholder, scalaSuffix))
-                        dependencyNode.appendNode("version", it.version)
+                        dependencyNode.appendNode("version", it.version.replace(scalaMultiVersion.scalaVersionPlaceholder, scalaVersion))
                         dependencyNode.appendNode("scope", "provided")
                     }
                 }
@@ -235,8 +251,8 @@ publishing {
             def envNexusPassword=System.getenv("NEXUS_PASSWORD")
             url = version.endsWith("SNAPSHOT") ? snapshotsRepoUrl : releasesRepoUrl
             credentials {
-                username = envNexusUsername != null ? envNexusUsername : nexusUsername
-                password = envNexusPassword != null ? envNexusPassword : nexusPassword
+                username = envNexusUsername != null ? envNexusUsername : project.ext.nexusUsername
+                password = envNexusPassword != null ? envNexusPassword : project.ext.nexusPassword
             }
         }
     }
@@ -261,5 +277,19 @@ model {
         setDestination(file("$buildDir/publications/mavenScala/$scalaVersion/pom-default.xml"))
         signArchives.dependsOn it
         signArchives.sign it.outputs.files.singleFile
+    }
+}
+
+task updateVersionInREADME() {
+    def scm = versionDetails()
+    def newVersion = findProperty("newVersion")
+    doLast {
+        if(newVersion != null || scm.isCleanTag) {
+            ant.replaceregexp(match: "([0-9]+\\.[0-9]+\\.[0-9]+)", replace: newVersion.toString(), flags: 'g', byline: true) {
+                fileset(dir: rootDir, includes: 'README.md')
+            }
+        } else {
+            throw new GradleException("README file can only be updated if the commit is tagged !!")
+        }
     }
 }

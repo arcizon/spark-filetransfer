@@ -42,14 +42,12 @@ class DefaultSourceTest
       "password" -> "pass",
       "fileFormat" -> "csv",
       "dfsTempPath" -> hdfsTempPath.toString,
-      "path" -> "data/sparkdata/iris.csv",
       "delimiter" -> ",",
       "header" -> "true"
     )
     val df: DataFrame = spark.read
-      .format("filetransfer")
       .options(readOptions)
-      .load()
+      .sftp("data/sparkdata/iris.csv")
     assert(df.count === 150)
   }
 
@@ -85,7 +83,7 @@ class DefaultSourceTest
       .format(this.getClass.getPackage.getName)
       .mode(SaveMode.Overwrite)
       .options(writeOptions)
-      .save(s"data/upload/${UUID.randomUUID().toString}")
+      .sftp(s"data/upload/${UUID.randomUUID().toString}")
   }
 
 }
