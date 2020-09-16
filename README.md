@@ -5,7 +5,7 @@ A library for reading and writing remote data files via various file transfer pr
 ---
 **NOTE**
 
-As of current release v0.1.0, only SFTP support has been implemented.
+As of current release v0.2.0, only SFTP support has been implemented.
 
 ---
 
@@ -30,13 +30,13 @@ Latest releases for this package can be found [here](https://search.maven.org/se
 ```
 groupId: com.github.arcizon
 artifactId: spark-filetransfer_2.11
-version: 0.1.0
+version: 0.2.0
 ```
 ### Scala 2.12
 ```
 groupId: com.github.arcizon
 artifactId: spark-filetransfer_2.12
-version: 0.1.0
+version: 0.2.0
 ```
 
 ## Using with Spark shell
@@ -45,19 +45,19 @@ For example, to include it when starting the spark shell:
 
 ### Spark compiled with Scala 2.11
 ```
-$SPARK_HOME/bin/spark-shell --packages com.github.arcizon:spark-filetransfer_2.11:0.1.0
+$SPARK_HOME/bin/spark-shell --packages com.github.arcizon:spark-filetransfer_2.11:0.2.0
 ```
 
 ### Spark compiled with Scala 2.12
 ```
-$SPARK_HOME/bin/spark-shell --packages com.github.arcizon:spark-filetransfer_2.12:0.1.0
+$SPARK_HOME/bin/spark-shell --packages com.github.arcizon:spark-filetransfer_2.12:0.2.0
 ```
 
 ### Spark with Python 3
 ```
-$SPARK_HOME/bin/pyspark --packages com.github.arcizon:spark-filetransfer_2.11:0.1.0
+$SPARK_HOME/bin/pyspark --packages com.github.arcizon:spark-filetransfer_2.11:0.2.0
 
-$SPARK_HOME/bin/pyspark --packages com.github.arcizon:spark-filetransfer_2.12:0.1.0
+$SPARK_HOME/bin/pyspark --packages com.github.arcizon:spark-filetransfer_2.12:0.2.0
 ```
 
 ## Options for Spark DataFrame API
@@ -199,7 +199,7 @@ df.write \
 ```r
 library(SparkR)
 
-sparkR.session("local[4]", sparkPackages = c("com.github.arcizon:spark-filetransfer_2.12:0.1.0"))
+sparkR.session("local[4]", sparkPackages = c("com.github.arcizon:spark-filetransfer_2.12:0.2.0"))
 
 ## Construct Spark DataFrame from CSV files directory on the remote machine via provided protocol
 df <- read.df(path="data/sparkdata/iris.csv",
