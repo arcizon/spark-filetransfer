@@ -41,6 +41,12 @@ configurations {
     }
 }
 
+ext {
+    nexusUsername=findProperty("nexusUsername")
+    nexusPassword=findProperty("nexusPassword")
+    isReleaseVersion = version.toString() ==~ "^[0-9]+.[0-9]+.[0-9]+\$"
+}
+
 dependencies {
     implementation "com.jcraft:jsch:${jschVersion}"
     implementation "org.scala-lang:scala-library:%scala-version%"
@@ -164,6 +170,9 @@ signing {
     sign configurations.archives
 }
 
+tasks.withType(Sign) {
+    onlyIf { isReleaseVersion }
+}
 
 publishing {
     publications {
@@ -242,8 +251,8 @@ publishing {
             def envNexusPassword=System.getenv("NEXUS_PASSWORD")
             url = version.endsWith("SNAPSHOT") ? snapshotsRepoUrl : releasesRepoUrl
             credentials {
-                username = envNexusUsername != null ? envNexusUsername : nexusUsername
-                password = envNexusPassword != null ? envNexusPassword : nexusPassword
+                username = envNexusUsername != null ? envNexusUsername : project.ext.nexusUsername
+                password = envNexusPassword != null ? envNexusPassword : project.ext.nexusPassword
             }
         }
     }
