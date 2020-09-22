@@ -39,7 +39,7 @@ jobs:
           name: integration-test-report
           path: ./build/reports/tests/integrationTest
       - name: Build
-        run: ./gradlew build -x test -PallScalaVersions
+        run: ./gradlew build -xtest -PallScalaVersions
       - name: Report Code Coverage
         run: ./gradlew reportScoverage
       - name: Archive Code Coverage results

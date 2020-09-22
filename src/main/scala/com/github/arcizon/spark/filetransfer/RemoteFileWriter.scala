@@ -60,5 +60,5 @@ private[filetransfer] case class RemoteFileWriter(
     new File(tempDir, dfsTempDir.getName).getCanonicalPath,
     options.uploadFilePrefix
   )
-  fileTransferClient(options).upload(uploadPath, options.path)
+  fileTransferClient(options).upload(uploadPath, options.path, mode)
 }

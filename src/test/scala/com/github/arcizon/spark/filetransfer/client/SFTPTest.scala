@@ -8,6 +8,7 @@ import com.github.arcizon.spark.filetransfer.testfactory.{
   IntegrationTest
 }
 import com.github.arcizon.spark.filetransfer.util.FileTransferOptions
+import org.apache.spark.sql.SaveMode
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.FunSuite
 
@@ -62,18 +63,91 @@ class SFTPTest extends FunSuite with FileFactory with MockFactory {
     val fto: FileTransferOptions = new FileTransferOptions(params)
     class MockableSFTP extends SFTP(fto)
     val mockSFTP: SFTP = stub[MockableSFTP]
-    (mockSFTP.upload _).when("testing.txt", params("path")).returns(())
+    (mockSFTP.upload _)
+      .when("testing.txt", params("path"), SaveMode.Overwrite)
+      .returns(())
   }
 
-  test("SFTP upload file", IntegrationTest) {
-    val uploadedFile: String = UUID.randomUUID().toString + ".txt"
-    params += ("path" -> s"data/upload/$uploadedFile")
+  test("SFTP upload files", IntegrationTest) {
+    params += ("path" -> s"data/upload/multiple")
     val fto: FileTransferOptions = new FileTransferOptions(params)
     val sftp: SFTP = new SFTP(fto)
-    val uploadFile: String = this.getClass.getResource("/upload.txt").getPath
+    val uploadFile: String =
+      this.getClass.getResource("/sftp/sparkdata").getPath
     assertResult(())(
       sftp.upload(uploadFile, params("path"))
     )
+  }
+
+  test("SFTP single file upload already exists", IntegrationTest) {
+    params += ("path" -> "data/upload/README.txt")
+    val fto: FileTransferOptions = new FileTransferOptions(params)
+    val sftp: SFTP = new SFTP(fto)
+    val uploadFile: String =
+      this.getClass.getResource("/sftp/upload/README.txt").getPath
+
+    val caughtExists = intercept[RuntimeException](
+      sftp.upload(uploadFile, params("path"), SaveMode.ErrorIfExists)
+    )
+    assert(caughtExists.getMessage.contains("already exists"))
+  }
+
+  test("SFTP single file upload ignore if already exists", IntegrationTest) {
+    params += ("path" -> "data/upload/README.txt")
+    val fto: FileTransferOptions = new FileTransferOptions(params)
+    val sftp: SFTP = new SFTP(fto)
+    val uploadFile: String =
+      this.getClass.getResource("/sftp/upload/README.txt").getPath
+
+    assertResult(())(
+      sftp.upload(uploadFile, params("path"), SaveMode.Ignore)
+    )
+  }
+
+  test("SFTP single file upload extensions mismatch", IntegrationTest) {
+    params += ("path" -> "data/upload/README.csv")
+    val fto: FileTransferOptions = new FileTransferOptions(params)
+    val sftp: SFTP = new SFTP(fto)
+    val uploadFile: String =
+      this.getClass.getResource("/sftp/upload/README.txt").getPath
+
+    val caughtExtMismatch = intercept[RuntimeException](
+      sftp.upload(
+        uploadFile,
+        params("path"),
+        SaveMode.ErrorIfExists
+      )
+    )
+    assert(caughtExtMismatch.getMessage.contains("file extensions mismatch"))
+  }
+
+  test("SFTP single file upload to directory", IntegrationTest) {
+    params += ("path" -> s"data/upload/${UUID.randomUUID().toString}")
+    val fto: FileTransferOptions = new FileTransferOptions(params)
+    val sftp: SFTP = new SFTP(fto)
+    val uploadFile: String =
+      this.getClass.getResource("/sftp/upload/README.txt").getPath
+
+    assertResult(())(
+      sftp.upload(uploadFile, params("path"), SaveMode.ErrorIfExists)
+    )
+  }
+
+  test("SFTP single file upload has too many source files", IntegrationTest) {
+    params += ("path" -> "data/upload/test.csv")
+    val fto: FileTransferOptions = new FileTransferOptions(params)
+    val sftp: SFTP = new SFTP(fto)
+    val uploadFile: String =
+      this.getClass.getResource("/sftp/sparkdata").getPath
+
+    val caughtTooManySrcFiles = intercept[RuntimeException](
+      sftp.upload(
+        uploadFile,
+        params("path"),
+        SaveMode.ErrorIfExists
+      )
+    )
+    assert(caughtTooManySrcFiles.getMessage.startsWith("Too many source files"))
   }
 
   test("SFTP upload unavailable file error", IntegrationTest) {
@@ -85,5 +159,4 @@ class SFTPTest extends FunSuite with FileFactory with MockFactory {
       sftp.upload("/error.txt", params("path"))
     )
   }
-
 }

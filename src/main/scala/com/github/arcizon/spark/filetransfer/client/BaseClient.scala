@@ -1,5 +1,7 @@
 package com.github.arcizon.spark.filetransfer.client
 
+import org.apache.spark.sql.SaveMode
+
 /**
   * Factory for remote file transfer client.
   *
@@ -15,11 +17,12 @@ trait BaseClient {
     *
     * @param src Local file/directory path.
     * @param dest Remote directory path.
+    * @param mode Spark DataFrame Write Mode.
     * @return Returns unit of successful upload.
     *
     * @since 0.1.0
     */
-  def upload(src: String, dest: String): Unit
+  def upload(src: String, dest: String, mode: SaveMode): Unit
 
   /**
     * Downloads files from remote host.
