@@ -5,7 +5,7 @@ A library for reading and writing remote data files via various file transfer pr
 ---
 **NOTE**
 
-As of current release v0.2.0, only SFTP support has been implemented.
+As of current release 0.3.0, only SFTP support has been implemented.
 
 ---
 
@@ -30,13 +30,13 @@ Latest releases for this package can be found [here](https://search.maven.org/se
 ```
 groupId: com.github.arcizon
 artifactId: spark-filetransfer_2.11
-version: 0.2.0
+version: 0.3.0
 ```
 ### Scala 2.12
 ```
 groupId: com.github.arcizon
 artifactId: spark-filetransfer_2.12
-version: 0.2.0
+version: 0.3.0
 ```
 
 ## Using with Spark shell
@@ -45,19 +45,19 @@ For example, to include it when starting the spark shell:
 
 ### Spark compiled with Scala 2.11
 ```
-$SPARK_HOME/bin/spark-shell --packages com.github.arcizon:spark-filetransfer_2.11:0.2.0
+$SPARK_HOME/bin/spark-shell --packages com.github.arcizon:spark-filetransfer_2.11:0.3.0
 ```
 
 ### Spark compiled with Scala 2.12
 ```
-$SPARK_HOME/bin/spark-shell --packages com.github.arcizon:spark-filetransfer_2.12:0.2.0
+$SPARK_HOME/bin/spark-shell --packages com.github.arcizon:spark-filetransfer_2.12:0.3.0
 ```
 
 ### Spark with Python 3
 ```
-$SPARK_HOME/bin/pyspark --packages com.github.arcizon:spark-filetransfer_2.11:0.2.0
+$SPARK_HOME/bin/pyspark --packages com.github.arcizon:spark-filetransfer_2.11:0.3.0
 
-$SPARK_HOME/bin/pyspark --packages com.github.arcizon:spark-filetransfer_2.12:0.2.0
+$SPARK_HOME/bin/pyspark --packages com.github.arcizon:spark-filetransfer_2.12:0.3.0
 ```
 
 ## Options for Spark DataFrame API
@@ -86,12 +86,13 @@ uploaded/downloaded from remote machine via provided protocol.
 * `dfsTempPath` - Temporary directory on the distributed filesystem. Default set to the value
 of **localTempPath** option. For every run, a uniquely named subdirectory
 (marked for deletion upon JVM exit) gets created within this directory for copying the locally downloaded
-files and also for writing the DataFrame output of the upload content.
+files and for writing the DataFrame output of the upload content.
 __To achieve parallelism, you need to set this value to a distributed filesystem path that is accessible
 by your SparkSession.__
 * `uploadFilePrefix` - Prefix to be used for the file to be uploaded. Default set to __part__.
 All the files to be uploaded during write operation will be of a consistent format
 `<uploadFilePrefix>-<upload_files_count_index>.<fileformat>`, example: part-0.csv, part-1.csv and so on.
+__This value will be used only if the source DataFrame has more than one partitions during write.__
 * `path` - Location of the file/directory on the remote machine accessible via protocol.
 Can be skipped if provided as parameter to Spark DataFrame API's load() or save() method.
 
@@ -107,6 +108,8 @@ and multiline for *json* and so on.
 This package is registered as a datasource against Spark Datasource Register which allows you to
 use short name `filetransfer` instead of the full package name `com.github.arcizon.spark.filetransfer`
 for the __format__.
+
+* From version 0.3.0 `DataFrameWriter` save mode will be honored while uploading the output files to the remote machine.
 
 ### Scala API
 Import `com.github.arcizon.spark.filetransfer._` to get implicits that add the supported protocol
@@ -130,7 +133,9 @@ val df = spark.read
   .sftp("data/sparkdata/")
 
 // Write Spark DataFrame in JSON File format on the remote machine via provided protocol
-df.write
+df.coalesce(1)
+  .write
+  .mode("append")
   .option("host", "example.com")
   .option("port", "22")
   .option("username", "foo")
@@ -138,7 +143,7 @@ df.write
   .option("fileFormat", "json")
   .option("uploadFilePrefix", "sample")
   .option("dfsTempPath", "hdfs:///test/tmp")
-  .sftp("data/upload/output/")
+  .sftp("data/upload/output/iris.json")
 ```
 
 ### Java API
@@ -199,7 +204,7 @@ df.write \
 ```r
 library(SparkR)
 
-sparkR.session("local[4]", sparkPackages = c("com.github.arcizon:spark-filetransfer_2.12:0.2.0"))
+sparkR.session("local[4]", sparkPackages = c("com.github.arcizon:spark-filetransfer_2.12:0.3.0"))
 
 ## Construct Spark DataFrame from CSV files directory on the remote machine via provided protocol
 df <- read.df(path="data/sparkdata/iris.csv",

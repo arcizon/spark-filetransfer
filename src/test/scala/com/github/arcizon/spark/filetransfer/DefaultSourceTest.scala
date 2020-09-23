@@ -1,7 +1,5 @@
 package com.github.arcizon.spark.filetransfer
 
-import java.util.UUID
-
 import com.github.arcizon.spark.filetransfer.testfactory.{
   IntegrationTest,
   SparkFactory
@@ -9,7 +7,7 @@ import com.github.arcizon.spark.filetransfer.testfactory.{
 import com.holdenkarau.spark.testing.HDFSClusterLike
 import org.apache.hadoop.fs.Path
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, Row, SaveMode}
+import org.apache.spark.sql.{DataFrame, DataFrameWriter, Row, SaveMode}
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
 class DefaultSourceTest
@@ -79,11 +77,18 @@ class DefaultSourceTest
       "dfsTempPath" -> hdfsTempPath.toString,
       "multiLine" -> "true"
     )
-    df.write
+    val dfw: DataFrameWriter[Row] = df
+      .coalesce(1)
+      .sort(df("tz"))
+      .write
       .format(this.getClass.getPackage.getName)
-      .mode(SaveMode.Overwrite)
+      .mode(SaveMode.Append)
       .options(writeOptions)
-      .sftp(s"data/upload/${UUID.randomUUID().toString}")
+
+    (1 to 2).foreach(i => {
+      log.info(s"Running DF write Append operation $i out of 2 times")
+      dfw.sftp(s"data/upload/append")
+    })
   }
 
 }
